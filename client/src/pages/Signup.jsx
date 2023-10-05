@@ -1,8 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function SignUp() {
   const [formData, setFormData] = useState({});
+  const [error, seterror] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -13,16 +17,30 @@ export default function SignUp() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const res = await fetch("/api/auth/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
+    try {
+      setLoading(true);
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    const data = await res.json();
-    console.log(data);
+      const data = await res.json();
+
+      if (data.success === false) {
+        seterror(data.message);
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      seterror(null);
+      navigate("/sign-in");
+    } catch (error) {
+      setLoading(false);
+      seterror(error.message);
+    }
   };
 
   return (
@@ -50,8 +68,11 @@ export default function SignUp() {
           id="password"
           onChange={handleChange}
         />
-        <button className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80">
-          Sign Up
+        <button
+          disabled={loading}
+          className="bg-slate-700 text-white p-3 rounded-lg uppercase hover:opacity-95 disabled:opacity-80"
+        >
+          {loading ? "Loading..." : "Sign Up"}
         </button>
       </form>
       <div className="flex gap-2 mt-6">
@@ -60,6 +81,7 @@ export default function SignUp() {
           <span className="text-blue-700">Sign In</span>
         </Link>
       </div>
+      {error && <p className="text-red-600 mt-5">{error}</p>}
     </div>
   );
 }
